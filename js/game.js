@@ -31,7 +31,7 @@ var game = {
 
     this.setHandlers();
     this.loadMenu();
-    game.loadLevel(levels[game.level]);
+    game.loadLevel(game.getLevel(game.level));
   },
 
   setHandlers: function() {
@@ -51,11 +51,7 @@ var game = {
       $('.arrow, #next').addClass('disabled');
 
       setTimeout(function() {
-        if (game.level >= levels.length - 1) {
-          game.win();
-        } else {
-          game.next();
-        }
+        game.next();
       }, 2000);
     });
 
@@ -176,18 +172,18 @@ var game = {
   prev: function() {
     this.level--;
 
-    var levelData = levels[this.level];
+    var levelData = this.getLevel(this.level);
     this.loadLevel(levelData);
   },
 
   next: function() {
     if (this.difficulty === "hard") {
-      this.level = Math.floor(Math.random()* levels.length)
+      this.level = Math.floor(Math.random() * levels.length);
     } else {
-      this.level++
+      this.level++;
     }
 
-    var levelData = levels[this.level];
+    var levelData = this.getLevel(this.level);
     this.loadLevel(levelData);
   },
 
@@ -234,13 +230,23 @@ var game = {
     });
   },
 
+  getLevel: function(level) {
+    if (level === levels.length) {
+      return levelWin;
+    }
+
+    return levels[level];
+  },
+
   loadLevel: function(level) {
-    $('#editor').show();
-    $('#share').hide();
+    var isWin = this.level >= levels.length;
+
+    $('#editor').toggle(!isWin);
+    $('#share').toggle(isWin);
     $('#background, #pond').removeClass('wrap').attr('style', '').empty();
     $('#levelsWrapper').hide();
     $('.level-marker').removeClass('current').eq(this.level).addClass('current');
-    $('#level-counter .current').text(this.level + 1);
+    $('#level-counter .current').text(isWin ? this.level : this.level + 1);
     $('#before').text(level.before);
     $('#after').text(level.after);
     $('#next').removeClass('animated animation').addClass('disabled');
@@ -254,7 +260,7 @@ var game = {
       $('.arrow.left').addClass('disabled');
     }
 
-    if (this.level === levels.length - 1) {
+    if (this.level >= levels.length - 1) {
       $('.arrow.right').addClass('disabled');
     }
 
@@ -267,7 +273,6 @@ var game = {
     $('#code').height(20 * lines).data("lines", lines);
 
     var string = level.board;
-    var markup = '';
     var colors = {
       'g': 'green',
       'r': 'red',
@@ -288,6 +293,10 @@ var game = {
       $('#pond').append(frog);
     }
 
+    if (isWin) {
+      $('.frog .bg').removeClass('pulse').addClass('bounce');
+    }
+
     var classes = level.classes;
 
     if (classes) {
@@ -300,7 +309,6 @@ var game = {
     $('#background ' + selector).css(level.style);
 
     game.changed = false;
-    game.applyStyles();
     game.check();
   },
 
@@ -326,7 +334,7 @@ var game = {
   },
 
   applyStyles: function() {
-    var level = levels[game.level];
+    var level = game.getLevel(game.level);
     var code = $('#code').val();
     var selector = level.selector || '';
     $('#pond ' +  selector).attr('style', code);
@@ -336,8 +344,7 @@ var game = {
   check: function() {
     game.applyStyles();
 
-    var level = levels[game.level];
-    var lilypads = {};
+    var level = game.getLevel(game.level);
     var frogs = {};
     var correct = true;
 
@@ -389,23 +396,12 @@ var game = {
   },
 
   saveAnswer: function() {
-    var level = levels[this.level];
+    var level = this.getLevel(this.level);
     game.answers[level.name] = $('#code').val();
   },
 
   tryagain: function() {
     $('#editor').addClass('animated shake');
-  },
-
-  win: function() {
-    var solution = $('#code').val();
-
-    this.loadLevel(levelWin);
-
-    $('#editor').hide();
-    $('#code').val(solution);
-    $('#share').show();
-    $('.frog .bg').removeClass('pulse').addClass('bounce');
   },
 
   transform: function() {
@@ -419,18 +415,19 @@ var game = {
     document.title = messages.title[game.language] || messages.title.en;
     $('html').attr('lang', game.language);
 
-    var level = levels[game.level];
+    var level = game.getLevel(game.level);
     var instructions = level.instructions[game.language] || level.instructions.en;
     $('#instructions').html(instructions);
     game.loadDocs();
 
     $('.translate').each(function() {
       var label = $(this).attr('id');
+
       if (messages[label]) {
         var text = messages[label][game.language] || messages[label].en;
-	  }
+      }
 
-      $('#' + label).text(text);
+      $(this).text(text);
     });
   },
 
